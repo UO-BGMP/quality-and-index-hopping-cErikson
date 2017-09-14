@@ -2,7 +2,9 @@
 title: "Index Swapping"
 output:
   html_document: default
-  html_notebook: default
+  html_notebook:
+    toc: yes
+    toc_depth: 2
 ---
 
 ```{r setup, include=FALSE}
@@ -12,7 +14,6 @@ library(jsonlite)
 library(reshape2)
 library(ggpubr)
 library(tidyr)
-library(scales)
 ```
 
 First lets load the JSON object from the python script and link some names to make life easier.
@@ -32,28 +33,28 @@ print(meta)
 ```
 
 # Part 1 
-## A. 
-Turn in the 8 histograms.
+## A. Histograms of quality scores
+**Turn in the 8 histograms.**
 ```{r, include=FALSE}
 rdf <- data.frame(rd_avg)
 rdf_melt <- melt(rd_avg)
 
-rr1 <- ggplot(data=subset(rdf_melt, Var2==1), aes(x=Var1, y=value))+
+rr1 <- ggplot(data=subset(rdf_melt, Var2==1 & value != is.na(Var2)), aes(x=Var1, y=value))+
+ geom_col(color = "black")+
+ scale_y_log10()+
+ xlab("Avg Phred Per Read")+ylab("Counts")
+
+ri1 <- ggplot(data=subset(rdf_melt, Var2==2 & value != is.na(Var2)), aes(x=Var1, y=value))+
  geom_col(width = 1, color = "black")+
  scale_y_log10()+
  xlab("Avg Phred Per Read")+ylab("Counts")
 
-ri1 <- ggplot(data=subset(rdf_melt, Var2==2), aes(x=Var1, y=value))+
- geom_col(width = 1, color = "black")+
- scale_y_log10()+
- xlab("Avg Phred Per Read")+ylab("Counts")
-
-ri2 <- ggplot(data=subset(rdf_melt, Var2==3), aes(x=Var1, y=value))+
+ri2 <- ggplot(data=subset(rdf_melt, Var2==3 & value != is.na(Var2)), aes(x=Var1, y=value))+
  geom_col( width = 1, color = "black")+
  scale_y_log10()+
  xlab("Avg Phred Per Read")+ylab("Counts")
 
-rr2 <- ggplot(data=subset(rdf_melt, Var2==4), aes(x=Var1, y=value))+
+rr2 <- ggplot(data=subset(rdf_melt, Var2==4 & value != is.na(Var2)), aes(x=Var1, y=value))+
  geom_col(width = 1, color = "black")+
  scale_y_log10()+
  xlab("Avg Phred Per Read")+ylab("Counts")
@@ -78,33 +79,38 @@ pr2 <- ggplot(data=subset(pos_melt, L1==4), aes(x=i, y=value))+
  geom_col(width = 1, color = "black")+
  xlab("Position")+ylab("Avg Base Phred")
 ```
-**Average Score per Base Position**
-```{r, fig.width=12}
+**Average Score per Read**
+```{r, echo=FALSE, fig.width=12}
 ggarrange(rr1, ri1, ri2, rr2 + rremove("x.text"), 
           labels = c("R1", "I1", "I2", "R2"),
           ncol = 2, nrow = 2)
 ```
-**Average Score per Read**
-```{r, fig.width=12}
+___
+**Average Score per Base Position** The average phred score per base position in the reads. Note that the method of calculating the average was $m_n=m_{n-1}+{a_n-m_{n-1} \over n}$, in order to use O(n) space. 
+
+___
+```{r, echo=FALSE, fig.width=12}
 ggarrange(pr1, pi1, pi2, pr2 + rremove("x.text"), 
           labels = c("R1", "I1", "I2", "R2"),
           ncol = 2, nrow = 2)
 
 ```
+___
+**Histogram of Average Score per Base Position** Note that the method of calculating the average was $m_n=m_{n-1}+{a_n-m_{n-1} \over n}$, in order to use O(n) space. Also there is a rounding problem I can't seem to find.
 
-The average quality of reads was `r paste(c('R1:','I1:','I2:','R2:'), qual$run_avg)`
+___
 
-And the total number of reads was `r paste(c('R1:','I1:','I2:','R2:'),qual$rec_num)`
+*The average quality of reads was `r paste(c('R1:','I1:','I2:','R2:'), qual$run_avg)`*
+
+*And the total number of reads was `r paste(c('R1:','I1:','I2:','R2:'),qual$rec_num)`*
 
 ## B. 
-What is a good quality score cutoff for index reads and pairs to utilize for sample 
-identification and downstream analysis, respectively? 
+**What is a good quality score cutoff for index reads and pairs to utilize for sample identification and downstream analysis, respectively? **
 
-**A Cutoff of 20 would seem to be good.**
+*A Cutoff of 20 would seem to be good.*
 
 ## C. 
-How many indexes have Undetermined (N) base calls? (Utilize your command line 
-tool knowledge. Summit the command you used. CHALLENGE: use a one line command)
+**How many indexes have Undetermined (N) base calls? (Utilize your command line tool knowledge. Summit the command you used. CHALLENGE: use a one line command)**
 ```{bash, eval=FALSE}
 ssh hpc "zcat ~/jobs/622_index/1294*.gz | sed -n '2~4p' | awk 'BEGIN {Ns=0} /N/{Ns+=1} END {print Ns}'"
 ```
@@ -112,14 +118,14 @@ ssh hpc "zcat ~/jobs/622_index/1294*.gz | sed -n '2~4p' | awk 'BEGIN {Ns=0} /N/{
 `13499075`
 
 ## D. 
-What do the averaged Quality Scores across the reads tell you? Interpret your data 
-specifically. 
+**What do the averaged Quality Scores across the reads tell you? Interpret your data specifically. **
 
-**That the vast majority of reads fall above a score on 15. And follow a sigmoid curve.**
+*That the vast majority of reads fall above a score on 15. And follow a sigmoid curve.*
 
 
 # Part 2. 
-Write a program to document index swapping and number of reads retained per sample. 
+**Write a program to document index swapping and number of reads retained per sample.**
+See ./index.py
 
 Load the JSON for the good cutoff and link some names to make life easier.
 
@@ -138,20 +144,16 @@ Print the metadata for posterity.
 print(meta)
 ```
 ## A. 
-How many reads are retained for each expected index pair? What is the percentage? 
+**How many reads are retained for each expected index pair? What is the percentage? **
 
-**Reads for each of the correct barcode pairs: "I1_I2 Count proportion"**
+*Reads for each of the correct barcode pairs: "I1_I2 Count proportion"*
 
-`r paste(codes$known, tags[codes$known],unlist(tags[codes$known])/qual$rec_num[1])`
-
-**Reads for each of the correct barcode pairs: "I1_I2 Count proportion"**
-
-`r paste(codes$known, tags[codes$known],unlist(tags[codes$known])/qual$rec_num[1])`
+*`r paste(codes$known, tags[codes$known],unlist(tags[codes$known])/qual$rec_num[1])`*
 
 ## B.
-How many reads are indicative of index swapping? 
+**How many reads are indicative of index swapping? **
 
-**The sum of swapped reads is `r sum(unlist(tags[codes$swap]))` or the proportion is  `r sum(unlist(tags[codes$swap]))/qual$rec_num[1]` of all reads**
+*The sum of swapped reads is `r sum(unlist(tags[codes$swap]))` or the proportion is  `r sum(unlist(tags[codes$swap]))/qual$rec_num[1]` of all reads*
 
 ## C.
 Create a distribution of swapped indexes. What does this heatmap tell you/what is your interpretation of this data? 
@@ -163,13 +165,17 @@ code_counts_melt=melt(code_counts)
 code_counts_sep=separate(data = code_counts_melt, col = L1, into = c("I1", "I2"), sep = "\\_")
 names(code_counts_sep)=c('counts', 'I1', 'I2')
 resistor <- c("#000000", "#663300", "#FF0000", "#FF6c00", "#FFFF00", "#00FF00", "#0000FF", "#FF00FF","#7D7D7D","#FFFFFF")
-
 swap <- ggplot(data=code_counts_sep, aes(y=I1, x=I2, fill=log10(counts)))+
 geom_tile(stat="identity")+
+geom_text(label=formatC(code_counts_sep$counts/sum(unlist(code_counts)),  format = "e", digits = 0), color='gray50', size=2.5)+
 scale_fill_gradientn(colours = resistor, limits=c(0, 10), breaks= 1:10)+
 xlab("Index 2")+ylab("Index 1")+
 theme(axis.text.x = element_text(angle = 90 ,hjust = 1))
 swap
 ```
+___
+**Heat map of Index Pairs:** Note that color corresponds to the log10 of the raw count out of `r formatC(qual$rec_num[1] ,  format = "e", digits = 2)` counts. Gray text corresponds to the proportion of reads.
 
-**It is interesting, there is less index swapping that I expected. However the index swappiing that does occur is clearly not random. The 2 indexes with the highest swapping are recipical to one another. And one library that had 10x more reads than any other library showed an increased swapping across the board.**
+___
+
+*It is interesting, there is less index swapping that I expected. However the index swappiing that does occur is clearly not random. The 2 indexes with the highest swapping are recipical to one another. The only reason I can think of this occuring is cross contamination of the barcodes, when they were being added to the insert. And one library that had 10 fold more reads than any other library, showed an increase in swapping across the board.*
